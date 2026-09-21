@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Rotate & Flip</title>
+</head>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f7eded;
+        color: #5a4b4c;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 30px;
+        margin: 0;
+    }
+
+    h3 {
+        color: #b57a82;
+        margin-bottom: 20px;
+        letter-spacing: 1px;
+    }
+
+    .container {
+        display: flex;
+        gap: 25px;
+        align-items: flex-start;
+        background-color: #ffffff;
+        padding: 25px;
+        border-radius: 20px;
+        border: 2px solid #e8c5c8;
+        box-shadow: 0 10px 25px rgba(181, 122, 130, 0.2);
+    }
+
+    .canvas-box {
+        border: 2px solid #e8c5c8;
+        border-radius: 12px;
+        display: inline-block;
+        background-color: transparent;
+        overflow: hidden;
+    }
+
+    canvas{
+        display: block;
+        max-width: 400px;
+        max-height: 400px;
+        width: auto;
+        height: auto;
+    }
+
+    .control-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 200px;
+    }
+
+    input[type="file"] {
+        font-size: 12px;
+        color: #5a4b4c;
+        margin-bottom: 5px;
+    }
+
+    input[type="file"]::file-selector-button {
+        background-color: #e8c5c8;
+        color: #5a4b4c;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+
+    input[type="file"]::file-selector-button:hover {
+        background-color: #d8a7ad;
+    }
+
+    button {
+        background-color: #d8a7ad;
+        color: #ffffff;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    button:hover {
+        background-color: #c48b93;
+        transform: translateY(-2px);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    hr {
+        border: none;
+        border-top: 1px solid #f2d6d8;
+        margin: 5px 0;
+    }
+</style>
+<body>
+    <h3>Gambar 1</h3>
+    <div style="display: flex; gap: 20px; align-items: flex-start;"">
+        <div class="canvas-box">
+            <canvas id="gambar"></canvas>
+        </div>  
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <input type="file" id="file1" accept=".jpg,.jpeg,.png,.bmp"><br><br>
+            <button onclick="rotate('gambar')">Rotate 90°</button>
+            <button onclick="rotate180('gambar')">Rotate 180°</button>
+            <button onclick="rotate270('gambar')">Rotate 270°</button>
+            <button onclick="flipHorizontal('gambar')">Flip Horizontal</button>
+            <button onclick="flipVertical('gambar')">Flip Vertical</button>
+            <button onclick="saveImage('gambar')">Save</button>
+        </div>
+    </div> 
+
+    <script>
+        function loadImage(fileInput, canvasId) {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            img.onload = function () {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = URL.createObjectURL(file);
+        }
+
+        function copyPixel(dst, di, src, si) {
+            dst[di]     = src[si];
+            dst[di + 1] = src[si + 1];
+            dst[di + 2] = src[si + 2];
+            dst[di + 3] = src[si + 3];
+        }
+
+        function rotate(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            const newCanvas = document.createElement("canvas");
+            newCanvas.width = height;
+            newCanvas.height = width;
+            const newCtx = newCanvas.getContext("2d");
+            const newImageData = newCtx.createImageData(height, width);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const srcIndex = (y * width + x) * 4;
+                    const nx = height - 1 - y;
+                    const ny = x;
+                    const dstIndex = (ny * height + nx) * 4;
+
+                    newImageData.data[dstIndex] = imageData.data[srcIndex];
+                    newImageData.data[dstIndex + 1] = imageData.data[srcIndex + 1];
+                    newImageData.data[dstIndex + 2] = imageData.data[srcIndex + 2];
+                    newImageData.data[dstIndex + 3] = imageData.data[srcIndex + 3];
+                }
+            }
+
+            canvas.width = newCanvas.width;
+            canvas.height = newCanvas.height;
+            ctx.putImageData(newImageData, 0, 0);
+        }
+        
+        function rotate180(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+            const src = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const w = canvas.width;
+            const h = canvas.height;
+            const out = ctx.createImageData(w, h);
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const nx = w - 1 - x;
+                    const ny = h - 1 - y;
+
+                    const srcIndex = (y * w + x) * 4;
+                    const dstIndex = (ny * w + nx) * 4;
+                    
+                    copyPixel(out.data, dstIndex, src.data, srcIndex);
+                }
+            }
+
+            ctx.putImageData(out, 0, 0);
+        }
+
+        function rotate270(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+            const src = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const w = canvas.width;
+            const h = canvas.height;
+            
+            const temp = document.createElement("canvas");
+            temp.width = h;
+            temp.height = w;
+            const tctx = temp.getContext("2d");
+            const out = tctx.createImageData(h, w);
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const nx = y;
+                    const ny = w - 1 - x;
+
+                    const srcIndex = (y * w + x) * 4;
+                    const dstIndex = (ny * h + nx) * 4;
+                    
+                    copyPixel(out.data, dstIndex, src.data, srcIndex);
+                }
+            }
+            
+            canvas.width = h;
+            canvas.height = w;
+            ctx.putImageData(out, 0, 0);
+        }
+
+        function flipHorizontal(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+            const ImgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const newImageData = ctx.createImageData(width, height);
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const srcIndex = (y * width + x) * 4;
+                    const nx = width - 1 - x;
+                    const ny = y;
+                    const dstIndex = (ny * width + nx) * 4;
+
+                    newImageData.data[dstIndex] = ImgData.data[srcIndex];
+                    newImageData.data[dstIndex + 1] = ImgData.data[srcIndex + 1];
+                    newImageData.data[dstIndex + 2] = ImgData.data[srcIndex + 2];
+                    newImageData.data[dstIndex + 3] = ImgData.data[srcIndex + 3];
+                }
+            }
+
+            ctx.putImageData(newImageData, 0, 0);
+        }
+
+        function flipVertical(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext("2d");
+            const src = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const out = ctx.createImageData(w, h);
+
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const srcIndex = (y * w + x) * 4;
+                    const nx = x;
+                    const ny = h - 1 - y;
+                    const dstIndex = (ny * w + nx) * 4;
+
+                    copyPixel(out.data, dstIndex, src.data, srcIndex);
+                }
+            }
+
+            ctx.putImageData(out, 0, 0);
+        }
+
+            function saveImage(canvasId) {
+                const canvas = document.getElementById(canvasId);
+                const link = document.createElement("a");
+                link.download = canvasId + ".png";
+                link.href = canvas.toDataURL();
+                link.click();
+            }
+
+            document.getElementById("file1").addEventListener("change", function () {
+                loadImage(this, "gambar");
+            
+        });
+    </script>
+</body>
+</html>
